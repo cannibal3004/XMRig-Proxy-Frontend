@@ -1,10 +1,22 @@
 <?php
+
 header('Content-Type: application/json');
 error_reporting(0);
 
-if(!isset($_POST["cc"])) die;
-require('config.php');
+//debug stuff
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+// remove before publishing
 
+if(!isset($_POST["cc"])) die;
+require('config/config.php');
+require('db_login.php');
+
+$db_login = new DB_Login($db_server, $db_database, $db_username, $db_password);
+
+// $use_db_login = true;
+// define(USE_DB_LOGIN)
 //-- Fix for IIS Server
 if(!function_exists('apache_request_headers') ) {
 	function apache_request_headers() {
@@ -27,14 +39,71 @@ if(!function_exists('apache_request_headers') ) {
 }
 
 $headers = apache_request_headers();
-
+//var_dump($headers);
 switch($_POST['cc'])
 {
 	case 'check_password':
 		echo json_encode(verify_password($headers));
 	break;
-	
-    case ($_POST['cc'] == 'read_db' && verify_password($headers)):
+
+	case 'is_admin':
+		if(!verify_password($headers))
+			die();
+		echo json_encode(user_is_admin($headers));
+	break;
+
+	case 'toggle_admin':
+		if (!verify_password($headers)){
+			die();
+		}
+		if (user_is_admin($headers)){
+			//var_dump($headers);
+			echo json_encode(toggle_admin());
+		}
+	break;
+
+	case 'toggle_active':
+		if (!verify_password($headers)){
+			die();
+		}
+		if (user_is_admin($headers)){
+			//var_dump($headers);
+			echo json_encode(toggle_active());
+		}
+	break;
+
+	case 'change_password':
+		if(!verify_password($headers))
+			die();
+		echo json_encode(change_password());
+		break;
+
+	case 'get_users':
+		if(!verify_password($headers))
+			die();
+		echo json_encode(get_users());
+	break;
+
+	case "add_user":
+		if (!verify_password($headers))
+			die();
+		if (user_is_admin($headers)){
+			echo json_encode(add_user());
+		}
+		//echo json_encode(DB_Login::GetUsers());
+	break;
+
+	case "delete_users":
+		if (!verify_password($headers))
+			die();
+		if (user_is_admin($headers)){
+			echo json_encode(delete_users());
+		}
+	break;
+
+    case "read_db":
+		if (!verify_password($headers))
+			die();
 		$proxy_id = $_POST["proxy"];
 		$db = new SQLite3('proxy.db');
 		$db->busyTimeout(5000);
@@ -51,10 +120,13 @@ switch($_POST['cc'])
 			$i++;
 		}
 		$db->close();
+		
 		echo json_encode($arr);
     break;
 	
 	case 'write_db':
+		// if (!verify_password($headers))
+		// 	die();
 		$db = new SQLite3('proxy.db');
 		$db->busyTimeout(5000); 
 		$db->exec('PRAGMA journal_mode = wal;');
@@ -125,7 +197,9 @@ switch($_POST['cc'])
 		$db->close();
     break;
 
-	case ($_POST['cc'] == 'proxy_data' && verify_password($headers)):
+	case ('proxy_data'):
+		if (!verify_password($headers))
+			die();
 		//endpoint --> config, workers, summary
 		$proxy_id = $_POST["proxy"];
 		$endpoint = $_POST["endpoint"];
@@ -151,7 +225,9 @@ switch($_POST['cc'])
 		echo json_encode($api_data);
     break;
 	
-	case ($_POST['cc'] == 'write_job' && verify_password($headers)):
+	case 'write_job':
+		if (!verify_password($headers))
+			die();
 		$proxy_id = $_POST["proxy"];
 		$job_datas = $_POST["job_datas"];
 		$proxy_pool = $_POST["proxy_pool"];
@@ -161,7 +237,9 @@ switch($_POST['cc'])
 			
 	break;
 	
-	case ($_POST['cc'] == 'get_job' && verify_password($headers)):
+	case 'get_job':
+		if (!verify_password($headers))
+			die();
 		$proxy_id = $_POST["proxy"];
 		$jobs = get_jobs($proxy_id);
 		if(!$jobs){
@@ -175,20 +253,26 @@ switch($_POST['cc'])
 		}
 	break;
 	
-	case ($_POST['cc'] == 'get_history' && verify_password($headers)):
+	case 'get_history':
+		if (!verify_password($headers))
+			die();
 		$proxy_id = $_POST["proxy"];
 		$datas = get_history($proxy_id);
 		if($datas) echo json_encode($datas); else echo json_encode('false');
 	break;
 	
-	case ($_POST['cc'] == 'delete_file' && verify_password($headers)):
+	case 'delete_file':
+		if (!verify_password($headers))
+			die();
 		$file = $_POST["file"];
 		$del = false;
 		if(file_exists($file)) $del = unlink($file);
 		echo json_encode($del);
 	break;
 	
-	case ($_POST['cc'] == 'put_data' && verify_password($headers)):
+	case 'put_data':
+		if (!verify_password($headers))
+			die();
 	    $proxy_id = $_POST["proxy"];
 		$mode = $_POST["mode"];
 		$url = "http://".$proxy_list[$proxy_id]["ip"].":".$proxy_list[$proxy_id]["port"]."/1/config";
@@ -365,8 +449,8 @@ function write_config($url, $proxy_config_data, $token){
 	$proxy_config_data = json_encode($proxy_config_data);
 	$authorization = "Authorization: Bearer ".$token;
 	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_HTTPHEADER, array(                                                                          
-		'Content-Type: application/json',                                                                                
+	curl_setopt($ch, CURLOPT_HTTPHEADER, array(
+		'Content-Type: application/json',
 		'Content-Length: ' . strlen($proxy_config_data),
 		$authorization) 
 	);
@@ -410,9 +494,64 @@ function isJson($string){
 }
 
 function verify_password($headers){
-	$token = $headers['Authorization'];
-	$password = base64_decode($token);
-	if($GLOBALS["app_password"] != trim($password)) return false; else return true;
+	global $db_login;
+	//var_dump($db_login);
+	$enc_creds = explode(":", $headers['Authorization']);
+	$username = base64_decode($enc_creds[0]);
+	//var_dump($username);
+	$password = base64_decode($enc_creds[1]);
+	//var_dump($password);
+	//var_dump(DB_Login::CheckPassword($username, $password));
+	return $db_login->CheckPassword($username, $password);
+	
+	
+}
+
+function user_is_admin($headers){
+	global $db_login;
+	$enc_creds = explode(":", $headers['Authorization']);
+	$username = base64_decode($enc_creds[0]);
+	return $db_login->IsAdmin($username) == 1;
+}
+
+function toggle_admin(){
+	global $db_login;
+	$user_id = $db_login->GetUserId($_POST["user"]);
+	return $db_login->ToggleAdmin($user_id);
+}
+
+function toggle_active(){
+	global $db_login;
+	$user_id = $db_login->GetUserId($_POST["user"]);
+	//var_dump($_POST["user"]);
+	return $db_login->ToggleActive($user_id);
+}
+
+function add_user(){
+	global $db_login;
+	//var_dump($_POST);
+	$new_user = base64_decode($_POST["new_user"]);
+	$new_pass = base64_decode($_POST["new_pass"]);
+	$is_admin = base64_decode($_POST["is_admin"]) == "true";
+	return $db_login->AddUser($new_user, $new_pass, $is_admin);
+}
+
+function delete_users(){
+	global $db_login;
+	$success = true;
+	$del_users = explode(",",$_POST["del_users"]);
+	foreach ($del_users as $user) {
+		$user_id = $db_login->GetUserId($user);
+		$result = $db_login->DeleteUser($user_id);
+		if (!$result)
+			$success = false;
+	}
+	return $success;
+}
+
+function get_users(){
+	global $db_login;
+	return $db_login->GetUsers();
 }
 
 function get_curl_data($ip, $port, $endpoint, $token){

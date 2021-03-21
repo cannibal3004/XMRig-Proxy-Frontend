@@ -1,0 +1,61 @@
+<div class="page" data-name="users">
+    <div class="navbar">
+      <div class="navbar-inner">
+          <div class="left">
+              <a href="index.html" class="back link" data-force="false"><i class="icon icon-back"></i></a>
+          </div>
+        <div class="title">XMRig-Proxy Users</div>
+      </div>
+    </div>
+    <div class="page-content">
+        <div class="data-table data-table-init card">
+            <div class="card-header">
+                <div class="data-table-header">
+                    <div class="data-table-title">Proxy Users</div>
+                    <div class="data-table-actions">
+                        <a class="link icon-only" id="refresh_table">
+                            <i class="icon f7-icons if-not-md">refresh_round</i>
+                        </a>
+                        <a href="/register/" class="link icon-only" id="add_users1">
+                            <i class="icon f7-icons if-not-md">add_round</i>
+                        </a>
+                    </div>
+                </div>
+                <div class="data-table-header-selected">
+                    <div class="data-table-title"><span class="data-table-selected-count"></span> users selected</div>
+                    <div class="data-table-actions">
+                        <a class="link icon-only" id="delete_users">
+                            <i class="icon f7-icons if-not-md">trash</i>
+                        </a>
+                        <a href="/register/" class="link icon-only" id="add_users2">
+                            <i class="icon f7-icons if-not-md">add_round</i>
+                        </a>
+                    </div>
+                </div>
+
+            </div>
+            <div class="card-content">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="checkbox-cell">
+                                <label class="checkbox">
+                                    <input type="checkbox">
+                                    <i class="icon-checkbox"></i>
+                                </label>
+                            </th>
+                            <th class="label-cell">ID</th>
+                            <th class="label-cell">Username</th>
+                            <th class="actions-cell">Password</th>
+                            <th class="actions-cell">Delete</th>
+                            <th class="actions-cell">Admin</th>
+                            <th class="actions-cell">Active</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users_table">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

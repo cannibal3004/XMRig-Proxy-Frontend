@@ -9,13 +9,14 @@
   <meta http-equiv="Content-Security-Policy" content="default-src * 'self' 'unsafe-inline' 'unsafe-eval' data: gap:">
   <title>XMRig-Proxy</title>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/framework7/2.2.1/css/framework7.min.css">
+  <!--<link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/framework7/5.7.10/css/framework7.min.css">-->
   <link rel="stylesheet" href="css/app.css">
   <link rel="apple-touch-icon" href="img/icon.png">
   <link rel="icon" href="img/icon.png">
 </head>
 <body class="theme-dark">
   <div id="app">	
-  <div class="panel panel-left panel-cover">
+  <div class="panel panel-left panel-cover"> 
 	  <div class="page">
 		<div class="page-content">
 		  <div class="block-title">Menu</div>
@@ -23,9 +24,12 @@
 			  <ul>
 				<li><a href="/workers/" class="panel-close">Workers</a></li>
 				<li><a href="/settings/" class="panel-close">Settings</a></li>
-				<li><a href="/ch_pool/" class="panel-close">Pools</a></li>
+        <li><a href="/users/" class="panel-close">Users</a></li>
+        <!--<li><a href="/register/" class="panel-close">Add User</a></li>-->
+        <li><a href="/ch_pool/" class="panel-close">Pools</a></li>
 				<li><a href="/history/" class="panel-close">History</a></li>
-				<li><a href="#" id="disconnect" class="panel-close">Disconnect</a></li>
+        <li><a href="/change_pw/" id="change_pw" class="panel-close">Change Password</a></li>
+				<li><a href="#" id="disconnect" class="panel-close">Logout</a></li>
 			  </ul>
 			</div>
 		</div>
@@ -34,6 +38,7 @@
   <div class="view view-main"></div>
   
   <script src="//cdnjs.cloudflare.com/ajax/libs/framework7/2.2.1/js/framework7.min.js"></script>
+  <!--<script src="//cdnjs.cloudflare.com/ajax/libs/framework7/5.7.10/js/framework7.min.js"></script>-->
   <script src="js/routes.js"></script>
   <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.1/jquery.min.js"></script>
   <script src="//cdn.plot.ly/plotly-latest.min.js"></script>
